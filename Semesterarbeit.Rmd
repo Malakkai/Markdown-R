@@ -1,0 +1,264 @@
+---
+title: "Semesterarbeit WaSt1"
+author: "Tim Mikec, Xhelbrim Halitjaha"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+    word_document:
+        toc: True
+        fig_width: 8
+toc-title: "Inhaltsverzeichnis"
+        
+---
+
+```{r setup, echo=FALSE, include=FALSE}
+library(dplyr)
+library(readxl)
+library(knitr)
+library(ggplot2)
+library(kableExtra)
+library(magrittr)
+library(pander)
+library(flextable)
+erhebung <- read_excel("C:\\Users\\halit\\Documents\\ZHAW WI\\WaSt1\\Semesterarbeit WaSt1\\Datensatz Semesterarbeit.xlsx")
+erhebung <- data.frame(erhebung)
+```
+
+\newpage
+## Aufgabe 1
+### Datensatz
+Der Datensatz enthält 11 Variablen von 3471 Befragten. Dabei handelt es sich um soziodemographische Variablen wie das Geburtsjahr, Geschlecht oder das Netto-Einkommen. Diese 11 Variablen sind eine Auswahl aus der allgemeinen Bevölkerungsumfrage der Sozialwissenschaften 2014 (ALLBUS 2014).
+
+ALLBUS ist eine Querschnittsbefragung, d.h. die Befragung findet mit genau diesen Befragten nur einmal statt. Dabei ist der Pool der Befragten repräsentativ für die Bevölkerung in Deutschland. Die ALLBUS-Daten liefern Informationen über Einstellungen, Verhaltensweisen und soziodemographischen Hintergrund der Befragten. Alle zwei Jahre werden repräsentative Querschnitte erhoben, welche jedoch nicht wie bei einer Panelbefragung miteinander verknüpft werden können. 
+
+### Datentypen
+Unten sind die Variabeln sowie deren Datentypen aufgelistet:
+```{r Variabeln und Datentypen, echo=FALSE, results='asis'}
+data.frame(Variable = names(erhebung),
+           Datentyp = sapply(erhebung, typeof),
+           Erste_Beobachtung = sapply(erhebung, function(x) paste0(head(x, n = 1))),
+           row.names = NULL) %>% 
+  flextable() %>%
+  autofit() %>%
+  theme_zebra()
+```
+
+\newpage
+
+### Histogramm
+Mit der Variable "Grösse" wird nachfolgend ein Histogramm erstellt. 
+```{r Histogramm, echo = FALSE, include = TRUE}
+hist(erhebung$GRO,
+     main = "Körpergrösse Normalverteilung",
+     xlab = "Körpergrösse [cm]",
+     ylab = "Dichte",
+     las = 1,
+     col = "deepskyblue",
+     breaks=seq(140,210,length=25),
+     freq = FALSE)
+
+# Durchschnitt
+GRO <- (erhebung$GRO)
+m <- mean(GRO, na.rm = TRUE)
+# Standartabweichung
+s <- sd(GRO, na.rm = TRUE)
+curve(dnorm(x,m,s),add = TRUE,lwd=3)
+box()
+abline(v = m, col = "red", lwd = 2)
+```
+
+In diesem Diagramm wird dargestellt, wie die Häufigkeit der Körpergrössen der Befragten verteilt ist inklusive der Normalverteilungskurve. Es ist klar erkennbar, dass sich eine grosse Menge zwischen 165 cm und 175 cm befindet.
+Der Mittelwert ist als rote Linie eingezeichnet.
+
+\newpage
+
+### Kuchendiagramm
+Im folgenden Kuchendiagramm wird die Variable "Höchster Abschluss" dargestellt, die den höchsten beruflichen Abschluss der Befragten angibt.
+```{r Kuchendiagramm, echo = FALSE, include = TRUE}
+# Table erstellen für Kuchendiagramm Hoe Abschluss
+x <- table(erhebung$HOE_ABSCHLUSS)
+
+# Definieren von Namen und Prozent anzeige
+percent <- table(erhebung$HOE_ABSCHLUSS)/length(erhebung$HOE_ABSCHLUSS)*100
+percent <- round(percent, 1)
+
+# Kuchendiagramm
+pie(x,
+    main="Höchster Abschluss",
+    col = rainbow(length(x)),
+    radius = 0.8,
+    labels=paste(names(x),percent,"%", sep = " "))
+```
+
+In diesem Diagramm ist klar erkennbar, dass fast die Hälfte der Befragten keine Weiterbildung oder ähnliches absolviert haben und eine "Lehre" als höchsten Abschluss angegeben haben.
+
+\newpage
+
+### Kennzahlen
+Nachfolgen werden einige Kennzahlen zur Variable "Grösse" berechnet.
+```{r Kennzahlen}
+# Arithmetisches Mittel
+mean(erhebung$GRO, na.rm = TRUE)
+
+# Quantile
+quantile(erhebung$GRO, probs = c(0.1, 0.5, 0.75), na.rm = TRUE)
+
+# Grösster Wert
+max(erhebung$GRO, na.rm = TRUE)
+
+# an welcher Position ist der Ausreisser
+which.max(erhebung$GRO)
+
+# kleinster Wert
+min(erhebung$GRO, na.rm = TRUE)
+```
+
+Wie aus den Kennzahlen ersichtlich ist, ist die Differenz des Mittelwerts und des Medians sehr klein, was darauf schliessen lässt, dass es eine symmetrische Verteilung im Histogramm gibt.
+
+\newpage
+## Aufgabe 2
+### Bivariater Barplot
+Im folgenden Diagramm ist ein bivariater Barplot zu den Variabeln Arztbesuche und Geschlecht dargestellt. 
+```{r bivariater Barplot, echo = FALSE, include = TRUE}
+# Alle ausreisser zusammengefasst in Spalte 7 bedeutet x > 6
+erhebung$ARZTBES[erhebung$ARZTBES > 6] <- 7
+
+erhebung$GESCHL <- factor(erhebung$GESCHL)
+
+barplot(table(erhebung$GESCHL, erhebung$ARZTBES),
+        beside = TRUE,
+        col = c("deepskyblue","pink"),
+        xlab = "Arztbesuche", 
+        ylab = "Anzahl Personen",
+        main = "Anzahl Arztbesuche Männlich und Weiblich",
+        names.arg = c(paste(0:6), "6+"),
+        ylim = c(0,600))
+grid()
+box()
+legend("topright",c("Männlich","Weiblich"),fill=c("deepskyblue","pink"),
+       bty = "n")
+```
+
+Dieses Diagramm zeigt die Häufigkeit der Arztbesuche im letzten Jahr zum Geschlecht auf. Es ist ein rechtsschiefes Verhalten erkennbar, was zeigt, dass sowohl männliche als auch weibliche Befragte selten den Arzt aufsuchen.
+Um es übersichtlicher zu gestalten, wurden Arztbesuche über 6 mal pro Jahr als 6+ zusammengefasst.
+
+\newpage
+
+### Multivariater Scatterplot
+In der nächsten Grafik wird ein multivariater Scatterplot aufgezeigt, der die Variabeln "Grösse", "Gewicht und "Geschlecht" enthält.
+```{r bivariater Scatterplot, echo = FALSE, include = TRUE}
+mycol <- c("deepskyblue", "pink3")
+palette(mycol)
+
+# Zweite Bivariate darstellung mit PLOT
+plot(GRO ~ GEW, data = erhebung, 
+     col = GESCHL, 
+     pch = 19,
+     main = "Grösse und Gewicht nach Geschlecht",
+     xlab = "Gewicht [kg]",
+     ylab = "Grösse [cm]")
+
+legend("topleft", c("Männlich", "Weiblich"), fill = palette(mycol),
+       bty = "n")
+```
+
+In diesem Diagramm wird die Körpergrösse im Verhältnis zum Körpergewicht aufgetragen und nach Geschlecht aufgeteilt. Man kann schnell erkennen, dass Männer im Schnitt grösser und schwerer sind als Frauen.
+
+\newpage
+
+## Aufgabe 3
+### Multivariater Scatterplot
+Im unteren Diagramm wird dasselbe wie in Aufgabe 2 in einem "ggplot" dargestellt.
+
+```{r 1. multivariater ggplot, echo = FALSE, include = TRUE}
+# Multivariater Plot Grösse, Gewicht, Geschlecht
+ggplot(erhebung, aes(x = GRO,
+                     y = GEW,
+                     color = GESCHL))+
+    geom_point(na.rm = T,
+               size = 2.5)+
+    scale_x_continuous(name = "Grösse [cm]")+
+    scale_y_continuous(name = "Gewicht [kg]")+
+    scale_color_manual(name = "Geschlecht",
+                       values = c("deepskyblue", "pink3"))
+```
+
+\newpage
+
+### Multivariater Boxplot
+Der folgene Boxplot zeigt den höchsten Schulabschluss nach Geburtsjahr, aufgeteilt nach Geschlecht.
+
+```{r 2. multivariater ggplot, echo = FALSE, include = TRUE}
+# Multivariater Plot Geschlcht, Geburtsjahr, Schulabschluss
+ggplot(na.exclude(erhebung), aes(x = GESCHL,
+                     y = GEBJAHR,
+                     fill = SCHULABSCHLUSS))+
+    geom_boxplot()+
+    scale_x_discrete(name = "Geschlecht")+
+    scale_y_continuous(name = "Geburtsjahr")+
+    scale_fill_discrete(name = "Schulabschluss")
+```
+
+Man kann erkennen, dass bis zum Jahrgang 1955 der "Volks,-Hauptschul" Abschluss dominant war. Bei jüngere Generationen gewannen weitere Schulabschlüsse stetig an beliebtheit, was auf ein neueres, komplexeres Ausbildungssystem schliessen lässt.
+Zwischen den Geschlechter ist kaum ein Unterschied bemerkbar, bis auf die Angabe "Anderer Abschluss", bei der die weiblichen Befragten wesentlich überwiegen. Leider können aus dieser Angabe keine weiteren Schlüsse gezogen werden, da die nötigen Informationen fehlen.
+
+\newpage
+
+## Selbststudium
+### Barplot mit absoluter und relativer Angabe
+Diese Grafik wurde erstellt, um den Prozess eines Artikels übersichtlicher zu gestalten.
+Die Artikel durchlaufen verschiedene Prozessabschnitte, wenn alles ordnungsgemäss funktioniert sieht der Prozess folgendes vor:
+
+* Vorschleifen
+* Aufchromen
+* Auf Fertigmass schleifen 
+* Polieren 
+* Liefern
+
+Das Verfahren weist jedoch zurzeit noch einige Probleme auf, so durchlaufen sie den erwähnten Ablauf zwei bis drei mal. Dieses Problem führte dazu, dass sich die Beteiligten nicht mehr einig waren, wo sich die Artikel nun befinden. Hierführ wurde die folgende Grafik erstellt.
+
+```{r Barplot relativ und absolut, echo=FALSE, warning=FALSE, fig.height=7.5}
+Artikel <- read_excel("C:\\Users\\halit\\Documents\\ZHAW WI\\WaSt1\\Semesterarbeit WaSt1\\Datensatz Semesterarbeit.xlsx", sheet = 2)
+
+Artikel$Arbeitsgang <- as.character(Artikel$Arbeitsgang)
+
+today <- format(Sys.Date(), format = "%d.%m.%Y")
+
+ggplot(Artikel, aes(x = Arbeitsgang,y = Anzahl, group = Status, na.rm = T))+
+        geom_bar(stat = "identity")+
+        geom_col(aes(fill = Status))+
+        geom_label(aes(label = Anzahl), position = position_stack(vjust = 0.5))+
+        labs(title = "Status Artikel",
+             subtitle = paste("Stand", today, sep = " "))
+```
+
+* Fertigschleifen 2nd
+    * bedeutet, dass die Artikel aufgrund von Fehlern ein zweites
+    mal geschliffen werden müssen
+    
+* Chromen 2nd
+    * bedeutet, dass die Artikel aufgrund von Fehlern ein zweites
+    mal verchromt werden müssen.
+    
+* Unbekannt
+    * bezeichnet die Differenz zwischen der offenen Menge von Firma XY und der Menge welche die Firma XZ im Blick hat.
+
+\newpage
+
+### Kalenderplot für Auftragsvolumen
+
+```{r Kalenderplot, echo = FALSE, fig.width=10, fig.height=7}
+library(openair)
+kalender <- read_excel("C:\\Users\\halit\\Documents\\ZHAW WI\\WaSt1\\Semesterarbeit WaSt1\\Datensatz Semesterarbeit.xlsx", sheet = 3)
+
+kalender$datum <- as.Date(kalender$datum, origin = "1899-12-30", tz = "GMT")
+
+kalender$date <- as.POSIXct(strptime(kalender$datum, format = "%Y-%m-%d", tz = "GMT"))
+
+calendarPlot(kalender, year = 2019, pollutant = "anzahl",
+             w.shift = 2,
+             remove.empty = T)
+```
+
+Dieser Kalender wurde erstellt, um die aktuelle Auftragslast zu evaluiren. Je dünkler ein Tag eingefärbt ist, desto unrealistischer wird es auf diesen Tag oder kurz bevor einen neuen Auftrag anzunehmen. Ein Betrieb hat also anhand dieser Funktion die Möglichkeit, schnellstmöglich auf Offertanfragn zu reagieren
+
+
